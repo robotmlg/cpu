@@ -1,13 +1,13 @@
 `ifndef MEMORY_V
 `define MEMORY_V
 
+`include "header.v"
+
 `define MEM_CMD_WIDTH  1
 `define MEM_CMD_READ   1'b0
 `define MEM_CMD_WRITE  1'b1
 
 module memory#(
-  parameter ADDRESS_WIDTH=32,
-  parameter DATA_WIDTH=32,
   parameter SIZE = 1024*1024,
   parameter READ_DELAY = 15,
   parameter WRITE_DELAY = 22
@@ -15,24 +15,24 @@ module memory#(
   input clk,
   input reset,
 
-  input [ADDRESS_WIDTH-1:0]i_address,
-  input [DATA_WIDTH-1:0]i_data,
+  input [`ADDRESS_WIDTH-1:0]i_address,
+  input [`DATA_WIDTH-1:0]i_data,
   input i_valid,
   input i_res_ready,
   input i_cmd,
 
-  output [DATA_WIDTH-1:0]o_data,
+  output [`DATA_WIDTH-1:0]o_data,
   output o_res_valid,
   output o_ready
 );
 
-`define CELLS (SIZE / (DATA_WIDTH / 8))
-reg [DATA_WIDTH-1:0]memory_cells [0:`CELLS];
+`define CELLS (SIZE / (`DATA_WIDTH / 8))
+reg [`DATA_WIDTH-1:0]memory_cells [0:`CELLS];
 
-wire [ADDRESS_WIDTH-1:0]cell_address = i_address >> $clog2(DATA_WIDTH/8);
+wire [`ADDRESS_WIDTH-1:0]cell_address = i_address >> $clog2(`DATA_WIDTH/8);
 reg ready;
 reg res_valid;
-reg [DATA_WIDTH-1:0]data;
+reg [`DATA_WIDTH-1:0]data;
 
 assign o_data = data;
 assign o_res_valid = res_valid;
@@ -52,10 +52,10 @@ initial begin
     size = (result / 11); // '0' + 'x' + 8chars + lf,
     //one cell -- one line no matter the cell size
 
-    //$display("Loading img file: %s, file size: %d, cells: %d", file, result, size);
+    $display("Loading img file: %s, file size: %d, cells: %d", file, result, size);
     $readmemh(file, memory_cells, 0, size - 1); // '0' + 'x' + 8chars + lf
-    //$display("The first word is: %x", memory_cells[0]);
-    //$display("The second word is: %x", memory_cells[1]);
+    $display("The first word is: %x", memory_cells[0]);
+    $display("The second word is: %x", memory_cells[1]);
   end else begin
     $display("Please specify input image file '+img'");
   end

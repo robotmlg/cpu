@@ -1,8 +1,6 @@
 `include "memory.v"
 `include "sim.v"
 
-`define ADDRESS_WIDTH 32
-`define DATA_WIDTH 32
 
 module test();
 

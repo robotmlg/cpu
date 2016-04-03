@@ -3,9 +3,6 @@
 
 `include "memory.v"
 
-`define ADDRESS_WIDTH 32
-`define DATA_WIDTH 32
-
 // decodes the x86 instruction passed
 module instr_dec(
   input clk,
