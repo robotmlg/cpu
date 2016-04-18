@@ -9,8 +9,8 @@
 
 module memory#(
   parameter SIZE = 1024*1024,
-  parameter READ_DELAY = 15,
-  parameter WRITE_DELAY = 22
+  parameter READ_DELAY = 1,
+  parameter WRITE_DELAY = 1
 )(
   input clk,
   input reset,
@@ -69,7 +69,7 @@ always @(posedge clk) begin
     data  = 1'bx;
   end
 
-  if (!reset && i_valid && o_ready) begin
+  if (!reset && i_valid && ready) begin
     case (i_cmd)
     //read takes 
     `MEM_CMD_READ: begin
