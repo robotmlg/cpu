@@ -26,7 +26,7 @@ always @(posedge clk) begin
 end
 
 // ALU module
-memory #(`ADDRESS_WIDTH, `DATA_WIDTH) my_mem(
+memory  my_mem(
   .clk(clk),
   .reset(reset),
 

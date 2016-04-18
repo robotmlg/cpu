@@ -59,7 +59,7 @@ fetch my_fetch(
 );
 
 // memory module
-memory #(`ADDRESS_WIDTH, `DATA_WIDTH) instr_mem(
+memory instr_mem(
   .clk(clk),
   .reset(reset),
 
