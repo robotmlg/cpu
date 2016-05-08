@@ -1,4 +1,4 @@
-`include "decode.v"
+`include "old_decode.v.bak"
 `include "sim.v"
 
 `define ADDRESS_WIDTH 32

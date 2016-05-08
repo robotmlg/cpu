@@ -23,6 +23,8 @@ module fetch(
     output [`MAX_INSTR_WIDTH-1:0] o_instr, // max length 15 bytes
     output [3:0] o_instr_len, 
     output o_res_valid,
+
+    // other stuff (?)
     output o_ready
     );
 

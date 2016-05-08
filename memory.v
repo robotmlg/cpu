@@ -54,8 +54,8 @@ initial begin
 
     $display("Loading img file: %s, file size: %d, cells: %d", file, result, size);
     $readmemh(file, memory_cells, 0, size - 1); // '0' + 'x' + 8chars + lf
-    $display("The first word is: %x", memory_cells[0]);
-    $display("The second word is: %x", memory_cells[1]);
+    //$display("The first word is: %x", memory_cells[0]);
+    //$display("The second word is: %x", memory_cells[1]);
   end else begin
     $display("Please specify input image file '+img'");
   end
