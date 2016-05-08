@@ -23,6 +23,7 @@ module fetch(
     output [`MAX_INSTR_WIDTH-1:0] o_instr, // max length 15 bytes
     output [3:0] o_instr_len, 
     output o_res_valid,
+    output [`ADDRESS_WIDTH-1:0] o_pc,
 
     // other stuff (?)
     output o_ready
@@ -43,7 +44,7 @@ reg [3:0] nxt_status;
 `define ST_END_INST   4'h8
 `define ST_PARSE_MRM  4'h9
 
-reg res_valid;
+reg res_valid = 0;
 reg passed_to_dec;
 
 // global info
@@ -70,25 +71,36 @@ assign o_addr = o_addr_valid ? cell_address : `ADDRESS_WIDTH'hx;
 // output
 reg [`MAX_INSTR_WIDTH-1:0] out_instr;
 reg [3:0] out_instr_len; // 1-15 B
-assign o_res_valid = (res_valid && (reg_status == `ST_IDLE));
+reg [`ADDRESS_WIDTH-1:0] out_pc;
+assign o_res_valid = res_valid;
 assign o_ready = (reg_status == `ST_IDLE) && !reset;
-assign o_instr = o_res_valid ? out_instr : `MAX_INSTR_WIDTH'hx;
-assign o_instr_len = o_res_valid ? out_instr_len : 4'hx;
+assign o_instr = o_res_valid ? out_instr : `MAX_INSTR_WIDTH'h0;
+assign o_instr_len = o_res_valid ? out_instr_len : 4'h0;
+assign o_pc = o_res_valid ? out_pc : `ADDRESS_WIDTH'h0;
 
 // synchronous reset
 always @(posedge clk && reset) begin
 reg_status <= `ST_RESET;
 end
 
-//
-always @(posedge clk && i_dec_ready && res_valid) begin
-    passed_to_dec = 1;
-    res_valid = 0;
+// when the buffer is full and the decoder is ready, pass the instruction
+always @(posedge clk && i_dec_ready==1 && res_valid==1 && !reset) begin
+    //$display("Passing to decoder");
+    res_valid <= #20 0;
 end
+
+/*
+always @(posedge clk) begin
+    $display("res_valid=%d",res_valid);
+    $display("o_res_valid=%d",o_res_valid);
+    $display("i_dec_ready=%d",i_dec_ready);
+end
+*/
+
 
 // fetch an instruction
 always @(posedge clk) begin
-$display("STATE = %d",reg_status);
+//$display("STATE = %d",reg_status);
 case (reg_status)
     `ST_RESET: begin
         reg_status = `ST_INIT_PC;
@@ -102,6 +114,7 @@ case (reg_status)
 
         if (i_mem_valid) begin
             base_pc = i_mem_data;
+            instr_address = base_pc;
             addr_valid = 1'b0;
             reg_status = `ST_NEW_INST;
             byte_index = 3'h4;
@@ -149,7 +162,7 @@ case (reg_status)
         end
         // record the byte
         if(byte_index != 3'h4 && valid_byte == 1) begin
-            $display("byte: %x",read_byte);
+            //$display("byte: %x",read_byte);
             case (read_instr_len)
             4'h0: instr[7:0] = read_byte;
             4'h1: instr[15:8] = read_byte;
@@ -196,7 +209,7 @@ case (reg_status)
     end
     // determine the instruction length based on the opcode
     `ST_PARSE_OP: begin
-        $display("found an opcode! %x",read_byte);
+        //$display("found an opcode! %x",read_byte);
         casez (read_byte[7:4])
         // 0: ADD, OR, PUSH CS/ES, POP ES
         // 1: ADC, SBB, PUSH/POP SS
@@ -367,7 +380,7 @@ case (reg_status)
         endcase
     end
     `ST_PARSE_MRM: begin
-        $display("parsing Mod R/M");
+        //$display("parsing Mod R/M");
         reg_status = `ST_IDLE;
         // parse mod
         case (read_byte[7:6])
@@ -398,16 +411,14 @@ case (reg_status)
             reg_status = `ST_IDLE;
     end
     `ST_IDLE: begin
-        if (!passed_to_dec)   begin
-            // if you haven't passed the last instruction to decode, STALL
-        end	
-        else begin // if the last instruction got passed, load in next 
-                   // instruction to ready it for passing
+        if (res_valid==0) begin // if the last instruction was passed,
+                                // ready the next instruction 
             $display("%d byte: %x",instr_len,instr);
-            passed_to_dec = 0;
             res_valid = 1;
             out_instr = instr;
             out_instr_len = instr_len;
+            out_pc = instr_address;
+            next_address = instr_address + instr_len;
             reg_status = `ST_NEW_INST;
         end
     end

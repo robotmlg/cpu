@@ -25,8 +25,10 @@ wire fetch_mem_valid;
 wire [`ADDRESS_WIDTH-1:0] fetch_mem_addr;
 // fetch-dec comms
 wire fetch_res_valid;
+wire dec_fetch_ready;
 wire [`MAX_INSTR_WIDTH-1:0] instr_out;
 wire [3:0] instr_len;
+wire [`ADDRESS_WIDTH-1:0] instr_pc;
 // dec-exec comms
 wire dec_res_valid;
 
@@ -61,10 +63,11 @@ fetch my_fetch(
     .o_addr(fetch_mem_addr),
 
     // fetch-dec comms
-    .i_dec_ready(dec_ready),
+    .i_dec_ready(dec_fetch_ready),
     .o_res_valid(fetch_res_valid),
     .o_instr(instr_out),
     .o_instr_len(instr_len),
+    .o_pc(instr_pc),
 
     .o_ready(fetch_ready)
 );
@@ -78,6 +81,8 @@ decode my_dec(
     .i_instr_valid(fetch_res_valid),
     .i_instr(instr_out),
     .i_instr_len(instr_len),
+    .i_pc(instr_pc),
+    .o_fetching(dec_fetch_ready),
 
     // decode-execute comms
     .i_next_ready(1'b0),

@@ -12,6 +12,7 @@ module decode(
     input i_instr_valid,
     input [`MAX_INSTR_WIDTH-1:0] i_instr,
     input [3:0] i_instr_len,
+    input [`ADDRESS_WIDTH-1:0] i_pc,
     output o_fetching,
 
     // deocde-execute comms
@@ -93,8 +94,8 @@ reg [`MAX_INSTR_WIDTH-1:0] instr;
 reg [`ADDRESS_WIDTH-1:0] instr_len;
 integer instr_len_int=0;
 reg [`ADDRESS_WIDTH-1:0] instr_address = `ADDRESS_WIDTH'h0; // the PC address
-reg [`ADDRESS_WIDTH-1:0] next_address = `ADDRESS_WIDTH'h0;
 reg [7:0] opcode;
+reg [15*8:0] opcode_str;
 reg [15*8:0] instr_bytes;
 reg [2:0] op_order;
 reg [2:0] op_size; // size of data operated on (bytes)
@@ -158,11 +159,6 @@ always @(posedge clk && i_instr_valid) begin
         fetching = 0;
 end
 
-// synchonrous pass to execution
-always @(posedge clk && i_next_ready && res_valid) begin
-    passed_out = 1;
-    res_valid = 0;
-end
 
 
 // decode the instructions
@@ -173,10 +169,12 @@ always @(posedge clk) begin
         reg_status = `ST_IDLE;
     end
     `ST_IDLE: begin
+        /*
         if (!passed_out) begin
             // if you haven't passed the last instruction, STALL
         end
         else begin
+        */
             passed_out = 0;
             res_valid = 1;
             out_opcode = opcode;
@@ -190,7 +188,7 @@ always @(posedge clk) begin
             out_opSRC_data = opSRC_data;
             out_opSRC_scale = opSRC_scale;
             out_opSRC_base_reg = opSRC_base_reg;
-        end
+        //end
     end
     // get the requested bytes from the instruction
     `ST_GET_BYTE: begin
@@ -213,6 +211,7 @@ always @(posedge clk) begin
         4'hF: $display("Instruction only 15 bytes!");
         endcase
         byte_index++;
+        reg_status = nxt_status;
     end
     // start a new instruction
     `ST_NEW_INST: begin
@@ -225,10 +224,11 @@ always @(posedge clk) begin
         op_group = 5'h0;
         opDEST_flags`FLG_RESET = `RESET_FLAGS;
         opSRC_flags`FLG_RESET = `RESET_FLAGS;
-        instr_address = next_address;
+        instr_address = i_pc;
         byte_index=4'h0;
         reg_status = `ST_GET_BYTE;
         nxt_status = `ST_PARSE_INST;
+        $display("decoding %x",instr);
     end
     // evaluate a new instruction or prefixes
     `ST_PARSE_INST: begin
@@ -248,6 +248,7 @@ always @(posedge clk) begin
     end
     // evaluate an opcode first byte
     `ST_PARSE_OP: begin
+        //$display("decoding opcode %x",curr_byte);
         casez (curr_byte[7:4])
         // 0: ADD, OR, PUSH CS/ES, POP ES
         // 1: ADC, SBB, PUSH/POP SS
@@ -263,46 +264,57 @@ always @(posedge clk) begin
                 case (curr_byte) 
                 8'h06: begin
                     opcode = `OPC_PUSH;
+                    opcode_str = "push";
                     opDEST_reg = `SEG_ES;
                 end
                 8'h07: begin
                     opcode = `OPC_POP;
+                    opcode_str = "pop";
                     opDEST_reg = `SEG_ES;
                 end
                 8'h16: begin
                     opcode = `OPC_PUSH;
+                    opcode_str = "push";
                     opDEST_reg = `SEG_SS;
                 end
                 8'h17: begin
                     opcode = `OPC_POP;
+                    opcode_str = "pop";
                     opDEST_reg = `SEG_SS;
                 end
                 8'h27: begin
                     opcode = `OPC_DAA;
+                    opcode_str = "daa";
                     opDEST_flags`FLG_VAL = 0;
                 end
                 8'h37: begin
                     opcode=`OPC_AAA;
+                    opcode_str = "aaa";
                     opDEST_flags`FLG_VAL = 0;
                 end
                 8'h0E: begin
                     opcode = `OPC_PUSH;
+                    opcode_str = "push";
                     opDEST_reg = `SEG_CS;
                 end
                 8'h1E: begin
                     opcode = `OPC_PUSH;
+                    opcode_str = "push";
                     opDEST_reg = `SEG_DS;
                 end
                 8'h1F: begin
                     opcode = `OPC_POP;
+                    opcode_str = "pop";
                     opDEST_reg = `SEG_DS;
                 end
                 8'h2F: begin
                     opcode = `OPC_DAS;
+                    opcode_str = "das";
                     opDEST_flags`FLG_VAL = 0;
                 end
                 8'h3F: begin
                     opcode = `OPC_AAS;
+                    opcode_str = "aas";
                     opDEST_flags`FLG_VAL = 0;
                 end
                 endcase
@@ -314,14 +326,14 @@ always @(posedge clk) begin
                 reg_status = `ST_GET_BYTE;
                 // select opcode
                 case (curr_byte[5:3])
-                3'b000: opcode = `OPC_ADD;
-                3'b001: opcode = `OPC_OR;
-                3'b010: opcode = `OPC_ADC;
-                3'b011: opcode = `OPC_SBB;
-                3'b100: opcode = `OPC_AND;
-                3'b101: opcode = `OPC_SUB;
-                3'b110: opcode = `OPC_XOR;
-                3'b111: opcode = `OPC_CMP;
+                3'b000: begin opcode = `OPC_ADD; opcode_str = "and"; end
+                3'b001: begin opcode = `OPC_OR;  opcode_str = "or";  end
+                3'b010: begin opcode = `OPC_ADC; opcode_str = "adc"; end
+                3'b011: begin opcode = `OPC_SBB; opcode_str = "sbb"; end
+                3'b100: begin opcode = `OPC_AND; opcode_str = "and"; end
+                3'b101: begin opcode = `OPC_SUB; opcode_str = "sub"; end
+                3'b110: begin opcode = `OPC_XOR; opcode_str = "xor"; end
+                3'b111: begin opcode = `OPC_CMP; opcode_str = "cmp"; end
                 endcase
                 // decode args
                 case (curr_byte[2:0])
@@ -362,7 +374,6 @@ always @(posedge clk) begin
                 endcase
             end
         end
-        /*
         // INC/DEC
         // PUSH/POP general reg
         4'b010?: begin
@@ -371,10 +382,10 @@ always @(posedge clk) begin
           opSRC_flags`FLG_VAL = 0;
           // opcode
           case (curr_byte[4:3])
-          2'b00: opcode_str="inc";
-          2'b01: opcode_str="dec";
-          2'b10: opcode_str="push";
-          2'b11: opcode_str="pop";
+          2'b00: begin opcode_str="inc"; opcode = `OPC_INC; end
+          2'b01: begin opcode_str="dec"; opcode = `OPC_DEC; end
+          2'b10: begin opcode_str="push";opcode = `OPC_PUSH; end
+          2'b11: begin opcode_str="pop"; opcode = `OPC_POP; end
           endcase
           // register
           case (curr_byte[2:0])
@@ -405,10 +416,12 @@ always @(posedge clk) begin
           endcase
           reg_status = `ST_END_INST;
         end
+        
         default: begin
-          //$display("OPCODE NOT IMPLEMENTED");
+          $display("OPCODE NOT IMPLEMENTED");
           reg_status = `ST_NEW_INST;
         end
+        /*
         // Lots of random shit
         4'h6: begin
           case (curr_byte[3:0])
@@ -601,14 +614,14 @@ always @(posedge clk) begin
             nxt_status = `ST_PARSE_IMM;
             disp_count = 3'h0;
             case (curr_byte[5:3])
-            3'b000: opcode = `OPC_ADD;
-            3'b001: opcode = `OPC_OR;
-            3'b010: opcode = `OPC_ADC;
-            3'b011: opcode = `OPC_SBB;
-            3'b100: opcode = `OPC_AND;
-            3'b101: opcode = `OPC_SUB;
-            3'b110: opcode = `OPC_XOR;
-            3'b111: opcode = `OPC_CMP;
+            3'b000: begin opcode = `OPC_ADD; opcode_str = "and"; end
+            3'b001: begin opcode = `OPC_OR;  opcode_str = "or";  end
+            3'b010: begin opcode = `OPC_ADC; opcode_str = "adc"; end
+            3'b011: begin opcode = `OPC_SBB; opcode_str = "sbb"; end
+            3'b100: begin opcode = `OPC_AND; opcode_str = "and"; end
+            3'b101: begin opcode = `OPC_SUB; opcode_str = "sub"; end
+            3'b110: begin opcode = `OPC_XOR; opcode_str = "xor"; end
+            3'b111: begin opcode = `OPC_CMP; opcode_str = "cmp"; end
             endcase
         end
         endcase
@@ -752,8 +765,7 @@ always @(posedge clk) begin
     end
     // print the instruction
     `ST_END_INST: begin
-    /*
-      $write("%x:\t%s",instr_address,opcode_str);
+      $write("%x:\t%x\t%s",instr_address,instr,opcode_str);
       if (opSRC_flags`FLG_VAL == 1 || opDEST_flags`FLG_VAL == 1)
         $write("\t");
       if (opSRC_flags`FLG_VAL == 1) begin
@@ -836,7 +848,6 @@ always @(posedge clk) begin
         end
       end
       $display("");
-      */
       reg_status = `ST_IDLE;
     end
   

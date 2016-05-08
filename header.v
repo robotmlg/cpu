@@ -52,5 +52,7 @@
 `define OPC_AAA     8'h0C
 `define OPC_DAS     8'h0D
 `define OPC_AAS     8'h0E
+`define OPC_INC     8'h0F
+`define OPC_DEC     8'h10
 
 `endif
