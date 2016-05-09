@@ -91,9 +91,9 @@ module decode(
 
 // status registers
 reg ready;
-reg res_valid;
+reg res_valid=0;
 reg fetching;
-reg passed_out;
+reg state_idle = 0;
 
 // FSM registers
 reg [3:0] reg_status = `ST_RESET;
@@ -180,12 +180,17 @@ end
 
 // synchronous retrieve instruction
 always @(posedge clk && i_instr_valid) begin
-    if(reg_status == `ST_IDLE) begin
+    if(state_idle == 1) begin
         reg_status = `ST_NEW_INST;
         fetching = 1;
     end
     else
         fetching = 0;
+end
+
+// when the buffer is full and the next stage is ready, pass the data
+always @(posedge clk && i_next_ready==1 && res_valid==1 && !reset) begin
+    res_valid <= #20 0;
 end
 
 
@@ -196,15 +201,14 @@ always @(posedge clk) begin
     case (reg_status)
     `ST_RESET: begin
         reg_status = `ST_IDLE;
+        res_valid = 0;
+        fetching = 1;
+        out_pc = `ADDRESS_WIDTH'h0;
+        instr_address = `ADDRESS_WIDTH'h0;
     end
     `ST_IDLE: begin
-        /*
-        if (!passed_out) begin
-            // if you haven't passed the last instruction, STALL
-        end
-        else begin
-        */
-            passed_out = 0;
+        state_idle = 1;
+        if ( res_valid == 0 && instr_address != 0) begin
             res_valid = 1;
             out_opcode = opcode;
             out_pc = instr_address;
@@ -218,7 +222,9 @@ always @(posedge clk) begin
             out_opSRC_data = opSRC_data;
             out_opSRC_scale = opSRC_scale;
             out_opSRC_base_reg = opSRC_base_reg;
-        //end
+            reg_status = `ST_NEW_INST;
+        end
+        
     end
     // get the requested bytes from the instruction
     `ST_GET_BYTE: begin
@@ -245,6 +251,7 @@ always @(posedge clk) begin
     end
     // start a new instruction
     `ST_NEW_INST: begin
+        state_idle = 0;
         instr_len = i_instr_len;
         instr = i_instr;
         op_size = 3'h4;
@@ -254,6 +261,8 @@ always @(posedge clk) begin
         op_group = 5'h0;
         opDEST_flags`FLG_RESET = `RESET_FLAGS;
         opSRC_flags`FLG_RESET = `RESET_FLAGS;
+        ModRM_flags`FLG_RESET = `RESET_FLAGS;
+        ModRM_reg_flags`FLG_RESET = `RESET_FLAGS;
         instr_address = i_pc;
         byte_index=4'h0;
         reg_status = `ST_GET_BYTE;
@@ -591,8 +600,6 @@ always @(posedge clk) begin
     `ST_PARSE_MRM: begin
         //$display("Parsing ModR/M");
         reg_status = `ST_GET_BYTE;
-        ModRM_flags`FLG_RESET = `RESET_FLAGS;
-        ModRM_reg_flags`FLG_RESET = `RESET_FLAGS;
         // parse mod
         case (curr_byte[7:6])
         2'b00:begin

@@ -37,6 +37,7 @@ module memory_stage(
 `define ST_IDLE       4'h1
 `define ST_NEW_INST   4'h2
 `define ST_GET_REG    4'h3
+`define ST_CALC_ADD   4'h4
 `define ST_END_INST   4'hF
 
 // status registers
@@ -69,6 +70,9 @@ reg [3:0] opSRC_reg;
 reg [4:0] opSRC_scale;
 reg [3:0] opSRC_base_reg;
 
+reg [`DATA_WIDTH-1:0] opSRC_val;
+reg [`DATA_WIDTH-1:0] opDEST_val;
+
 // inter-stage registers
 reg [7:0] out_opcode;
 
@@ -83,6 +87,27 @@ reg [`ADDRESS_WIDTH-1:0]    out_opSRC_data;
 reg [3:0]                   out_opSRC_reg;
 reg [4:0]                   out_opSRC_scale;
 reg [3:0]                   out_opSRC_base_reg;
+
+// reg-file comms
+reg [3:0] req_reg;
+wire [3:0] w_req_reg;
+assign w_req_reg = req_reg;
+reg [`DATA_WIDTH-1:0] req_data;
+wire [`DATA_WIDTH-1:0] w_req_data;
+assign w_req_data = req_data;
+reg [`REG_CMD_WIDTH-1:0] req_cmd;
+wire [`REG_CMD_WIDTH-1:0] w_req_cmd;
+assign w_req_cmd = req_cmd;
+reg req_valid;
+wire w_req_valid;
+assign w_req_valid = req_valid;
+reg req_read_ready;
+wire w_req_read_ready;
+assign w_req_read_ready = req_read_ready;
+
+wire [`DATA_WIDTH-1:0] reg_resp_data;
+wire reg_resp_valid;
+wire reg_ready;
 
 
 assign o_res_valid = res_valid;
@@ -111,8 +136,13 @@ always @(posedge clk) begin
     case (reg_status)
     `ST_RESET: begin
         reg_status = `ST_IDLE;
+        res_valid = 0;
+        fetching = 1;
     end
     `ST_IDLE: begin
+        if (res_valid == 0 && fetching == 0) begin
+            res_valid = 1;
+        end
     end
     `ST_NEW_INST: begin
         opcode = i_opcode;
@@ -128,16 +158,40 @@ always @(posedge clk) begin
         opSRC_scale = i_opSRC_scale;
         opSRC_base_reg = i_opSRC_base_reg;
 
+        opSRC_val = 0;
+        opDEST_val = 0;
+
+        $display("getting registers for %x",opcode);
+
         reg_status = `ST_GET_REG;
     end
+    `ST_GET_REG: begin
+        if (opSRC_flags`FLG_VAL == 1) begin
+        end
+    end
+    `ST_CALC_ADD: begin
+        if (opSRC_flags`FLG_VAL == 1 && opSRC_flags`FLG_MEM == 1) begin
+        end
+    end
+    
   endcase
 
 end
 
-/*
 reg_file my_reg(
+    .clk(clk),
+    .reset(reset),
+
+    .i_reg(w_req_reg),
+    .i_data(w_req_data),
+    .i_cmd(w_req_cmd),
+    .i_valid(w_req_valid),
+    .i_res_ready(w_req_read_ready),
+
+    .o_data(reg_resp_data),
+    .o_res_valid(reg_resp_valid),
+    .o_ready(reg_ready)
 );
-*/
 
 
 endmodule

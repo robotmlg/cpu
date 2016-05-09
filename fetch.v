@@ -114,7 +114,7 @@ case (reg_status)
 
         if (i_mem_valid) begin
             base_pc = i_mem_data;
-            instr_address = base_pc;
+            next_address = base_pc;
             addr_valid = 1'b0;
             reg_status = `ST_NEW_INST;
             byte_index = 3'h4;
@@ -188,6 +188,7 @@ case (reg_status)
     `ST_NEW_INST: begin
         instr = `MAX_INSTR_WIDTH'b0;
         instr_len = 0;
+        instr_address = next_address;
         read_instr_len = -1;
         reg_status = `ST_GET_BYTE;
         nxt_status = `ST_FIND_INST;

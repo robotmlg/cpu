@@ -16,7 +16,7 @@ module reg_file(
 
   input [3:0] i_reg,
   input [`DATA_WIDTH-1:0] i_data,
-  input i_cmd,
+  input [`REG_CMD_WIDTH-1:0] i_cmd,
   input i_valid,
   input i_res_ready,
 
