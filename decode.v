@@ -17,6 +17,20 @@ module decode(
 
     // deocde-execute comms
     input i_next_ready,
+    output [`ADDRESS_WIDTH-1:0] o_pc,
+    output [7:0]                   o_opcode,
+
+    output [8:0]                   o_opDEST_flags,
+    output [`ADDRESS_WIDTH-1:0]    o_opDEST_data, // offset, immediate, absolute
+    output [3:0]                   o_opDEST_reg,
+    output [4:0]                   o_opDEST_scale,
+    output [3:0]                   o_opDEST_base_reg,
+
+    output [8:0]                   o_opSRC_flags,
+    output [`ADDRESS_WIDTH-1:0]    o_opSRC_data,
+    output [3:0]                   o_opSRC_reg,
+    output [4:0]                   o_opSRC_scale,
+    output [3:0]                   o_opSRC_base_reg,
     output o_res_valid,
     output o_ready
 );
@@ -126,6 +140,7 @@ reg [3:0] opSRC_base_reg;
 
 // inter-stage registers
 reg [7:0] out_opcode;
+reg [`ADDRESS_WIDTH-1:0] out_pc;
 
 reg [8:0]                   out_opDEST_flags;
 reg [`ADDRESS_WIDTH-1:0]    out_opDEST_data; // offset, immediate, absolute
@@ -139,6 +154,20 @@ reg [3:0]                   out_opSRC_reg;
 reg [4:0]                   out_opSRC_scale;
 reg [3:0]                   out_opSRC_base_reg;
 
+assign  o_opcode          = out_opcode;
+assign  o_pc              = out_pc;
+
+assign  o_opDEST_flags    = out_opDEST_flags;
+assign  o_opDEST_data     = out_opDEST_data; 
+assign  o_opDEST_reg      = out_opDEST_reg;
+assign  o_opDEST_scale    = out_opDEST_scale;
+assign  o_opDEST_base_reg = out_opDEST_base_reg;
+
+assign  o_opSRC_flags     = out_opSRC_flags;
+assign  o_opSRC_data      = out_opSRC_data;
+assign  o_opSRC_reg       = out_opSRC_reg;
+assign  o_opSRC_scale     = out_opSRC_scale;
+assign  o_opSRC_base_reg  = out_opSRC_base_reg;
 
 assign o_res_valid = res_valid;
 assign o_ready = ready;
@@ -178,6 +207,7 @@ always @(posedge clk) begin
             passed_out = 0;
             res_valid = 1;
             out_opcode = opcode;
+            out_pc = instr_address;
             out_opDEST_flags = opDEST_flags;
             out_opDEST_reg = opDEST_reg;
             out_opDEST_data = opDEST_data;

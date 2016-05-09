@@ -18,11 +18,16 @@ module reg_file(
   input [`DATA_WIDTH-1:0] i_data,
   input i_cmd,
   input i_valid,
+  input i_res_ready,
 
   output [`DATA_WIDTH-1:0] o_data,
   output o_res_valid,
   output o_ready
 );
+
+reg [`DATA_WIDTH-1:0] data;
+reg res_valid;
+reg ready;
 
 assign o_data = data;
 assign o_res_valid = res_valid;
