@@ -89,14 +89,13 @@ always @(posedge clk && i_dec_ready==1 && res_valid==1 && !reset) begin
     res_valid <= #20 0;
 end
 
-/*
-always @(posedge clk) begin
-    $display("res_valid=%d",res_valid);
-    $display("o_res_valid=%d",o_res_valid);
-    $display("i_dec_ready=%d",i_dec_ready);
+// get a new PC when passed in
+always @(posedge clk && i_pc_valid) begin
+    next_address = i_pc;
+    read_cell = (i_pc - base_pc) % (`DATA_WIDTH/8);
+    byte_index = (i_pc - base_pc) - read_cell;
+    reg_status = `ST_NEW_INST;
 end
-*/
-
 
 // fetch an instruction
 always @(posedge clk) begin
