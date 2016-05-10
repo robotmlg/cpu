@@ -99,14 +99,14 @@ always @(posedge clk) begin
         end
         `REG_CMD_CHECK: begin
             case (i_reg)
-            `REG_EAX: data <= d_eax;
-            `REG_ECX: data <= d_ecx;
-            `REG_EDX: data <= d_edx;
-            `REG_EBX: data <= d_ebx;
-            `REG_ESP: data <= d_esp;
-            `REG_EBP: data <= d_ebp;
-            `REG_ESI: data <= d_esi;
-            `REG_EDI: data <= d_edi;
+            `REG_EAX: data <= {{31{1'b0}},d_eax};
+            `REG_ECX: data <= {{31{1'b0}},d_ecx};
+            `REG_EDX: data <= {{31{1'b0}},d_edx};
+            `REG_EBX: data <= {{31{1'b0}},d_ebx};
+            `REG_ESP: data <= {{31{1'b0}},d_esp};
+            `REG_EBP: data <= {{31{1'b0}},d_ebp};
+            `REG_ESI: data <= {{31{1'b0}},d_esi};
+            `REG_EDI: data <= {{31{1'b0}},d_edi};
             endcase
         end
         endcase

@@ -44,6 +44,7 @@ wire [`ADDRESS_WIDTH-1:0] dec_mem_opSRC_data;
 wire [3:0] dec_mem_opSRC_reg;
 wire [4:0] dec_mem_opSRC_scale;
 wire [3:0] dec_mem_opSRC_base_reg;
+wire mem_dec_ready;
 
 
 // memory module
@@ -99,7 +100,7 @@ decode my_dec(
     .o_fetching(dec_fetch_ready),
 
     // decode-execute comms
-    .i_next_ready(1'b0),
+    .i_next_ready(mem_dec_ready),
     .o_pc(dec_mem_pc),
     .o_opcode(dec_mem_opcode),
 
@@ -125,7 +126,6 @@ memory_stage my_mem_stg(
     .i_input_valid(dec_res_valid),
     .i_pc(dec_mem_pc),
     .i_opcode(dec_mem_opcode),
-
     .i_opDEST_flags(dec_mem_opDEST_flags),
     .i_opDEST_data(dec_mem_opDEST_data),
     .i_opDEST_reg(dec_mem_opDEST_reg),
@@ -136,9 +136,16 @@ memory_stage my_mem_stg(
     .i_opSRC_reg(dec_mem_opSRC_reg),
     .i_opSRC_scale(dec_mem_opSRC_scale),
     .i_opSRC_base_reg(dec_mem_opSRC_base_reg),
+    .o_fetching(mem_dec_ready),
 
     .i_next_ready(1'b0),
     .o_res_valid(),
+    .o_pc(),
+    .o_opcode(),
+    .o_opA(),
+    .o_opB(),
+    .o_dest_reg(),
+    .o_dest_addr(),
     .o_ready()
 );
 

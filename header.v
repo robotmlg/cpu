@@ -24,15 +24,16 @@
 `define SEG_GS  4'hD
 
 // operand addressing mdoe flag macros
-`define FLG_VAL [8]  // whether this operand is used
-`define FLG_REL [7]  // this is an immediate relative address offset
-`define FLG_IMM [6]  // this is an immediate operand
-`define FLG_ABS [5]  // this is an absolute mem address
-`define FLG_REG [4]  // this operand has a register
-`define FLG_MEM [3]  // this operand references memory
-`define FLG_SCA [2]  // this operand has a register scale factor
-`define FLG_OFF [1]  // this operand has a register offset
-`define FLG_BAS [0]  // this operand has a base register offset
+`define FLG_VAL [8] // whether this operand is used
+`define FLG_REL [7] // this is an immediate relative address offset
+                    // only used to fix the offset address in decode stage
+`define FLG_IMM [6] // this is an immediate operand
+`define FLG_ABS [5] // this is an absolute mem address
+`define FLG_REG [4] // this operand has a register
+`define FLG_MEM [3] // this operand references memory
+`define FLG_SCA [2] // this operand has a register scale factor
+`define FLG_OFF [1] // this operand has a register offset
+`define FLG_BAS [0] // this operand has a base register offset
 `define FLG_RESET [8:0]
 `define RESET_FLAGS 9'b0
 

@@ -222,7 +222,6 @@ always @(posedge clk) begin
             out_opSRC_data = opSRC_data;
             out_opSRC_scale = opSRC_scale;
             out_opSRC_base_reg = opSRC_base_reg;
-            reg_status = `ST_NEW_INST;
         end
         
     end
