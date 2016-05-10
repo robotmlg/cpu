@@ -63,6 +63,9 @@ wire [7:0] exec_wb_opcode;
 wire [`DATA_WIDTH-1:0] exec_wb_value;
 wire [3:0] exec_wb_dest_reg;
 wire [`ADDRESS_WIDTH-1:0] exec_wb_dest_addr;
+// wb-fetch
+wire wb_fetch_pc_valid;
+wire [`ADDRESS_WIDTH-1:0] wb_fetch_pc;
 
 
 // memory module
@@ -86,8 +89,8 @@ fetch my_fetch(
     .clk(clk),
     .reset(reset),
 
-    .i_pc_valid(1'b0),
-    .i_pc(`ADDRESS_WIDTH'h0),
+    .i_pc_valid(wb_fetch_pc_valid),
+    .i_pc(wb_fetch_pc),
 
     // mem-fetch comms
     .i_mem_valid(mem_fetch_valid),
@@ -202,6 +205,10 @@ writeback my_wb(
     .i_dest_reg(exec_wb_dest_reg),
     .i_dest_addr(exec_wb_dest_addr),
     .o_fetching(wb_exec_ready),
+
+    //wb-fetch
+    .o_pc_valid(wb_fetch_pc_valid),
+    .o_pc(wb_fetch_pc),
 
     .o_ready()
 );

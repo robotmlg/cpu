@@ -38,7 +38,7 @@
 `define RESET_FLAGS 9'b0
 
 // simplified opcodes
-`define OPC_PUSH    8'h00
+`define OPC_NONE    8'h00
 `define OPC_POP     8'h01
 `define OPC_ADD     8'h02
 `define OPC_OR      8'h03
@@ -55,5 +55,6 @@
 `define OPC_AAS     8'h0E
 `define OPC_INC     8'h0F
 `define OPC_DEC     8'h10
+`define OPC_PUSH    8'h11
 
 `endif
