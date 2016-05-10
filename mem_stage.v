@@ -89,6 +89,9 @@ reg [3:0] opSRC_reg;
 reg [4:0] opSRC_scale;
 reg [3:0] opSRC_base_reg;
 
+reg [3:0] dest_reg;
+reg [`ADDRESS_WIDTH-1:0] dest_addr;
+
 reg [`DATA_WIDTH-1:0] opSRC_val;
 reg [`DATA_WIDTH-1:0] opSRC_reg_val;
 reg [`DATA_WIDTH-1:0] opDEST_base_val;
@@ -179,12 +182,8 @@ always @(posedge clk) begin
             out_pc = curr_pc;
             out_opA = opSRC_val;
             out_opB = opDEST_val;
-            // get the destination register info
-            if (opDEST_flags`FLG_REG && ~opDEST_flags`FLG_MEM)
-                out_dest_reg = opDEST_reg;
-            else
-                out_dest_addr = opDEST_val;
-
+            out_dest_reg = dest_reg;
+            out_dest_addr = dest_addr;
         end
     end
     `ST_NEW_INST: begin
@@ -209,6 +208,9 @@ always @(posedge clk) begin
         opDEST_val = 0;
         opDEST_reg_val = 0;
         opDEST_base_val = 0;
+
+        dest_reg = 0;
+        dest_addr = 0;
 
         src_done = 0;
         dest_done = 0;
@@ -469,7 +471,26 @@ always @(posedge clk) begin
     end
     `ST_END_INST: begin
         //$display("End of instr");
-        reg_status = `ST_IDLE;
+        // get the destination register info
+        if (opDEST_flags`FLG_REG && ~opDEST_flags`FLG_MEM) 
+            dest_reg = opDEST_reg;
+        else
+            dest_addr = opDEST_val;
+
+        // mark the destination register as dirty
+        if (dest_addr == 0) begin
+            req_reg = dest_reg;
+            req_cmd = `REG_CMD_MARKD;
+            req_valid = 1;
+            req_read_ready = 1;
+
+            if (reg_resp_valid) begin
+                reg_status = `ST_IDLE;
+                req_valid = 0;
+                req_read_ready = 0;
+                //$display("Got reg %x value %x", opDEST_base_reg, reg_resp_data);
+            end
+        end
     end
     
   endcase
