@@ -6,6 +6,8 @@
 `include "fetch.v"
 `include "decode.v"
 `include "mem_stage.v"
+`include "execute.v"
+`include "writeback.v"
 
 //`define ADDRESS_WIDTH 32;
 
@@ -45,6 +47,22 @@ wire [3:0] dec_mem_opSRC_reg;
 wire [4:0] dec_mem_opSRC_scale;
 wire [3:0] dec_mem_opSRC_base_reg;
 wire mem_dec_ready;
+// mem_stg-exec comms
+wire mem_exec_valid;
+wire exec_mem_ready;
+wire [`ADDRESS_WIDTH-1:0] mem_exec_pc;
+wire [7:0] mem_exec_opcode;
+wire [`DATA_WIDTH-1:0] mem_exec_opA;
+wire [`DATA_WIDTH-1:0] mem_exec_opB;
+wire [3:0] mem_exec_dest_reg;
+wire [`ADDRESS_WIDTH-1:0] mem_exec_dest_addr;
+// exec-wb comms
+wire exec_wb_valid;
+wire wb_exec_ready;
+wire [7:0] exec_wb_opcode;
+wire [`DATA_WIDTH-1:0] exec_wb_value;
+wire [3:0] exec_wb_dest_reg;
+wire [`ADDRESS_WIDTH-1:0] exec_wb_dest_addr;
 
 
 // memory module
@@ -138,16 +156,56 @@ memory_stage my_mem_stg(
     .i_opSRC_base_reg(dec_mem_opSRC_base_reg),
     .o_fetching(mem_dec_ready),
 
-    .i_next_ready(1'b0),
-    .o_res_valid(),
-    .o_pc(),
-    .o_opcode(),
-    .o_opA(),
-    .o_opB(),
-    .o_dest_reg(),
-    .o_dest_addr(),
+    .i_next_ready(exec_mem_ready),
+    .o_res_valid(mem_exec_valid),
+    .o_pc(mem_exec_pc),
+    .o_opcode(mem_exec_opcode),
+    .o_opA(mem_exec_opA),
+    .o_opB(mem_exec_opB),
+    .o_dest_reg(mem_exec_dest_reg),
+    .o_dest_addr(mem_exec_dest_addr),
     .o_ready()
 );
+
+execute my_exec(
+    .clk(clk),
+    .reset(reset),
+
+    // mem-exec comms
+    .i_input_valid(mem_exec_valid),
+    .i_pc(mem_exec_pc),
+    .i_opcode(mem_exec_opcode),
+    .i_opA(mem_exec_opA),
+    .i_opB(mem_exec_opB),
+    .i_dest_reg(mem_exec_dest_reg),
+    .i_dest_addr(mem_exec_dest_addr),
+    .o_fetching(exec_mem_ready),
+
+    .i_next_ready(wb_exec_ready),
+    .o_res_valid(exec_wb_valid),
+    .o_opcode(exec_wb_opcode),
+    .o_res(exec_wb_value),
+    .o_dest_reg(exec_wb_dest_reg),
+    .o_dest_addr(exec_wb_dest_addr),
+
+    .o_ready()
+);
+
+writeback my_wb(
+    .clk(clk),
+    .reset(reset),
+
+    // exec-wb
+    .i_input_valid(exec_wb_valid),
+    .i_opcode(exec_wb_opcode),
+    .i_val(exec_wb_value),
+    .i_dest_reg(exec_wb_dest_reg),
+    .i_dest_addr(exec_wb_dest_addr),
+    .o_fetching(wb_exec_ready),
+
+    .o_ready()
+);
+
 
 endmodule
 `endif

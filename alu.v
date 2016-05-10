@@ -1,6 +1,7 @@
 `ifndef ALU_V
 `define ALU_V
 
+`include "header.v"
 `include "full_add.v"
 `include "mul.v"
 `include "shift.v"
@@ -19,28 +20,28 @@ module alu(
   input clk,
   input reset,
   
-  input [31:0] i_a,    // 1st operand
-  input [31:0] i_b,    // 2nd operand
+  input [`DATA_WIDTH-1:0] i_a,    // 1st operand
+  input [`DATA_WIDTH-1:0] i_b,    // 2nd operand
   input  [2:0] i_cmd,  // command
 
-  output [31:0] o_result,
+  output [`DATA_WIDTH-1:0] o_result,
   output        o_valid, // result is valid
 
   output        o_ready  // ready to take input
 );
 
-reg [31:0] reg_result;
+reg [`DATA_WIDTH-1:0] reg_result;
 reg        reg_valid = 1'b0;
 
-wire [31:0] op_a;
-wire [31:0] op_b;
+wire [`DATA_WIDTH-1:0] op_a;
+wire [`DATA_WIDTH-1:0] op_b;
 
-wire [31:0] sum;
+wire [`DATA_WIDTH-1:0] sum;
 wire c_out;
 wire [63:0] prod;
-wire [31:0] shl_out;
-wire [31:0] shr_out;
-wire [31:0] shra_out;
+wire [`DATA_WIDTH-1:0] shl_out;
+wire [`DATA_WIDTH-1:0] shr_out;
+wire [`DATA_WIDTH-1:0] shra_out;
 
 // ALU state machine macros
 `define ST_RESET  2'h0
